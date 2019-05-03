@@ -27,7 +27,8 @@
                 android:padding="15sp"
                 android:textColor="@android:color/white"
                 android:background="@color/colorPrimary"
-                android:text="Turn on bluetooth" />
+                android:text="Turn on bluetooth"
+                android:onClick="requestForBluetoothService"/>
         </LinearLayout>
 
         <LinearLayout
@@ -78,7 +79,8 @@
                 android:background="@android:color/holo_blue_light"
                 android:textColor="@android:color/white"
                 android:layout_margin="15sp"
-                android:text="Arduino" />
+                android:text="Arduino"
+                android:onClick="selectDevice"/>
 
             <Button
                 android:id="@+id/secondDeviceBtn"
@@ -87,7 +89,7 @@
                 android:layout_weight="1"
                 android:background="@android:color/holo_blue_light"
                 android:textColor="@android:color/white"
-                android:layout_margin="15dp"
+                android:layout_margin="15sp"
                 android:text="Headset" />
         </LinearLayout>
 

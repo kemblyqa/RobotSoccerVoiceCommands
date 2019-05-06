@@ -22,12 +22,14 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Set;
+import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
     private Button findArduinoDevice, findHeadsetDevice, bluetoothSwitch;
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     public static int REQUEST_BLUETOOTH = 1;
     public final String ARDUINO_MAC_ADDRESS = "00:00";
+    private static final UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
     public ArrayAdapter<String> arrayAdapter;
     public ArrayList<BluetoothDevice> bluetoothDevices;
     public BluetoothSocket arduinoBluetoothSocket;
@@ -121,8 +123,8 @@ public class MainActivity extends AppCompatActivity {
 
     public void connectBtSocket(BluetoothDevice device) throws IOException {
         if(device.getAddress().equals(ARDUINO_MAC_ADDRESS)){
-//            arduinoBluetoothSocket = device.createRfcommSocketToServiceRecord(PORT_UUID);
-//            arduinoBluetoothSocket.connect();
+            arduinoBluetoothSocket = device.createRfcommSocketToServiceRecord(PORT_UUID);
+            arduinoBluetoothSocket.connect();
         }
     }
 
@@ -134,7 +136,7 @@ public class MainActivity extends AppCompatActivity {
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
         for(BluetoothDevice bt : pairedDevices){
             bluetoothDevices.add(bt);
-            arrayAdapter.add(bt.getUuids().toString());
+            arrayAdapter.add(bt.getName() + "\n" + bt.getAddress());
         }
         selectDeviceAlertDialog("Request pair");
     }

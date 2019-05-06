@@ -91,7 +91,7 @@
                 android:textColor="@android:color/white"
                 android:layout_margin="15sp"
                 android:text="Headset"
-                android:onClick="pairHeadsetDevice"/>
+                android:onClick="pairDevice"/>
         </LinearLayout>
 
         <LinearLayout

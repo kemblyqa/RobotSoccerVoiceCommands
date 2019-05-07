@@ -11,6 +11,7 @@ import android.widget.Toast;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.util.Set;
 import java.util.UUID;
 
@@ -33,23 +34,23 @@ public class BluetoothDevicesCustom extends Application {
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
     public Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
     Handler mHandler;
-    BluetoothSocket bluetoothSocket = null;
-    private ConnectedThread mConnectedThread;
+    public BluetoothSocket bluetoothSocket = null;
+    public ConnectedThread mConnectedThread;
 
     @Override
     public void onCreate() {
         super.onCreate();
         instance = this;
 
-        mHandler = new Handler(){
-            @Override
-            public void handleMessage(Message msg) {
-                if(msg.what == handlerState){
-                    String readMessage = (String) msg.obj;
-                    Toast.makeText(BluetoothDevicesCustom.this, readMessage, Toast.LENGTH_SHORT).show();
-                }
-            }
-        };
+//        mHandler = new Handler(){
+//            @Override
+//            public void handleMessage(Message msg) {
+//                if(msg.what == handlerState){
+//                    String readMessage = (String) msg.obj;
+//                    Toast.makeText(BluetoothDevicesCustom.this, readMessage, Toast.LENGTH_SHORT).show();
+//                }
+//            }
+//        };
     }
 
     public boolean sendToDevice(String word){
@@ -76,7 +77,11 @@ public class BluetoothDevicesCustom extends Application {
                 integerComm = 0;
                 break;
             }
+            default:{
+                return false;
+            }
         }
+        mConnectedThread.write(integerComm);
         return true;
     }
 
@@ -107,6 +112,7 @@ public class BluetoothDevicesCustom extends Application {
 
             mConnectedThread = new ConnectedThread(bluetoothSocket);
             mConnectedThread.start();
+            mConnectedThread.write(0);
             return true;
         } catch (IOException e) {
             try {
@@ -118,7 +124,6 @@ public class BluetoothDevicesCustom extends Application {
                 return false;
             }
         }
-
     }
 
     void setHandler(Handler handler) {
@@ -162,8 +167,9 @@ public class BluetoothDevicesCustom extends Application {
             }
         }
         //write method
-        public void write(String input) {
-            byte[] msgBuffer = input.getBytes();           //converts entered String into bytes
+        public void write(int input) {
+            byte[] msgBuffer = BigInteger.valueOf(input).toByteArray();           //converts entered String into bytes
+            //final int i = new BigInteger(bytes).intValue();
             try {
                 mmOutStream.write(msgBuffer);                //write bytes over BT connection via outstream
             } catch (IOException e) {

@@ -4,11 +4,13 @@ import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
+import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -16,129 +18,129 @@ import android.os.Bundle;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
-    private Button findArduinoDevice, findHeadsetDevice, bluetoothSwitch;
-    BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    public static int REQUEST_BLUETOOTH = 1;
-    public final String ARDUINO_MAC_ADDRESS = "00:00";
-    private static final UUID PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
+    private Button bluetoothSwitch, startTalking;
+    private TextView mVoiceInputTv, currentConnectedDevice;
+    private BluetoothDevicesCustom bluetoothDevicesCustom = BluetoothDevicesCustom.getInstance();
     public ArrayAdapter<String> arrayAdapter;
     public ArrayList<BluetoothDevice> bluetoothDevices;
-    public BluetoothSocket arduinoBluetoothSocket;
+    private BluetoothAdapter bluetoothAdapter;
+    private static final int REQ_CODE_SPEECH_INPUT = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        findArduinoDevice = findViewById(R.id.firstDeviceBtn);
-        findHeadsetDevice = findViewById(R.id.secondDeviceBtn);
         bluetoothSwitch = findViewById(R.id.toggleBluetoothBtn);
+        startTalking = findViewById(R.id.startBtn);
+        mVoiceInputTv = findViewById(R.id.inputCommand);
+        currentConnectedDevice = findViewById(R.id.currentConnectedDevice);
 
+        bluetoothAdapter = bluetoothDevicesCustom.getBluetoothAdapter();
         arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
         bluetoothDevices = new ArrayList<>();
+        makeBluetoothConnection();
 
-        if (!bluetoothAdapter.isEnabled()) {
-            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_BLUETOOTH);
-        } else {
-            bluetoothSwitch.setText(getString(R.string.turnOffBluetoothTitle));
-            Toast.makeText(this, "Discovering mode....", Toast.LENGTH_SHORT).show();
-        }
-//        IntentFilter filter = new IntentFilter(BluetoothDevice.ACTION_FOUND);
-//        registerReceiver(receiver, filter);
+        startTalking.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startVoiceInput();
+            }
+        });
     }
 
-    // Create a BroadcastReceiver for ACTION_FOUND.
-//    private final BroadcastReceiver receiver = new BroadcastReceiver() {
-//        public void onReceive(Context context, Intent intent) {
-//            String action = intent.getAction();
-//            if(action != null){
-//                switch (action) {
-//                    case BluetoothAdapter.ACTION_DISCOVERY_STARTED:
-//                        //discovery starts, we can show progress dialog or perform other tasks
-//                        break;
-//                    case BluetoothAdapter.ACTION_DISCOVERY_FINISHED:
-//                        // bluetoothAdapter.cancelDiscovery();
-//                        break;
-//                    case BluetoothDevice.ACTION_FOUND:
-//                        // Discovery has found a device. Get the BluetoothDevice
-//                        // object and its info from the Intent.
-//                        BluetoothDevice device = intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE);
-//                        if (addNewDeviceIfExists(device)) arrayAdapter.add(device.getName());
-//                        break;
-//                    default:
-//                        break;
-//                }
-//            }
-//        }
-//    };
+    private void startVoiceInput() {
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.getDefault());
+        intent.putExtra(RecognizerIntent.EXTRA_PROMPT, "Hello, How can I help you?");
+        try {
+            startActivityForResult(intent, REQ_CODE_SPEECH_INPUT);
+        } catch (ActivityNotFoundException a) {
 
-//    public boolean addNewDeviceIfExists(BluetoothDevice newDevice){
-//        for(BluetoothDevice device : bluetoothDevices){
-//            if(device.getAddress().equals(newDevice.getAddress()))
-//                return false;
-//        }
-//        bluetoothDevices.add(newDevice);
-//        return true;
-//    }
+        }
+    }
+
+    private void makeBluetoothConnection(){
+        if (!bluetoothAdapter.isEnabled()) {
+            Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableBtIntent, BluetoothDevicesCustom.REQUEST_BLUETOOTH);
+        } else {
+            bluetoothSwitch.setText(getString(R.string.turnOffBluetoothTitle));
+            Toast.makeText(this, "Bluetooth connected....", Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
-        if(requestCode == 1){
-            if(resultCode == Activity.RESULT_OK){
-                // bluetoothAdapter.startDiscovery();
-                bluetoothSwitch.setText(getString(R.string.turnOffBluetoothTitle));
-                Toast.makeText(this, "Discovering mode....", Toast.LENGTH_SHORT).show();
+        switch (requestCode) {
+            case REQ_CODE_SPEECH_INPUT: {
+                if (resultCode == RESULT_OK && null != data) {
+                    ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
+                    String resultText = result.get(0);
+                    mVoiceInputTv.setText(resultText);
+                    //sendVoiceCommand(resultText);
+                }
+                break;
             }
-            else if (resultCode == Activity.RESULT_CANCELED) {
-                finish();
-                System.exit(0);
+            case BluetoothDevicesCustom.REQUEST_BLUETOOTH:{
+                if(resultCode == Activity.RESULT_OK){
+                    bluetoothSwitch.setText(getString(R.string.turnOffBluetoothTitle));
+                    Toast.makeText(this, "Bluetooth connected....", Toast.LENGTH_SHORT).show();
+                }
+                else if (resultCode == Activity.RESULT_CANCELED) {
+                    finish();
+                    System.exit(0);
+                }
+                break;
             }
         }
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    public void selectDeviceAlertDialog(String title){
+    public void sendVoiceCommand(String comm){
+        String[] stringWords = comm.split(" ");
+        for(String word : stringWords){
+            if(!bluetoothDevicesCustom.sendToDevice(word)){
+                Toast.makeText(bluetoothDevicesCustom, "Word "+word+" not sent", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
+    public void selectDeviceAlertDialog(){
         new AlertDialog.Builder(MainActivity.this)
-            .setTitle(title)
+            .setTitle("Request pair")
             .setAdapter(arrayAdapter, new DialogInterface.OnClickListener() {
                 @Override
                 public void onClick(DialogInterface dialog, int which) {
-                    Toast.makeText(MainActivity.this, "Holis "+which, Toast.LENGTH_SHORT).show();
-                    //connect socket to handle the device
-
+                    connectBtSocket(bluetoothDevices.get(which));
                 }
             })
             .show();
     }
 
-    public void connectBtSocket(BluetoothDevice device) throws IOException {
-        if(device.getAddress().equals(ARDUINO_MAC_ADDRESS)){
-            arduinoBluetoothSocket = device.createRfcommSocketToServiceRecord(PORT_UUID);
-            arduinoBluetoothSocket.connect();
+    public void connectBtSocket(BluetoothDevice device){
+        if (device.getAddress().equals(BluetoothDevicesCustom.DEVICE_MAC_ADDRESS)){
+            if(bluetoothDevicesCustom.createConnection(device)){
+                Toast.makeText(bluetoothDevicesCustom, "Device successful connected", Toast.LENGTH_SHORT).show();
+                currentConnectedDevice.setText(device.getName());
+            } else {
+                Toast.makeText(bluetoothDevicesCustom, "There´s something wrong with connection", Toast.LENGTH_SHORT).show();
+            }
+        } else {
+            Toast.makeText(bluetoothDevicesCustom, "Wrong device!", Toast.LENGTH_SHORT).show();
         }
-    }
-
-    public void pairDevice(View view){
-//        if(!bluetoothAdapter.isDiscovering()) bluetoothAdapter.startDiscovery();
-        arrayAdapter.clear();
-        arrayAdapter.notifyDataSetChanged();
-        bluetoothDevices.clear();
-        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
-        for(BluetoothDevice bt : pairedDevices){
-            bluetoothDevices.add(bt);
-            arrayAdapter.add(bt.getName() + "\n" + bt.getAddress());
-        }
-        selectDeviceAlertDialog("Request pair");
     }
 
     public void requestForBluetoothService(View view){
@@ -147,7 +149,21 @@ public class MainActivity extends AppCompatActivity {
             bluetoothSwitch.setText(getString(R.string.turnOnBluetoothTitle));
         } else {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, REQUEST_BLUETOOTH);
+            startActivityForResult(enableBtIntent, BluetoothDevicesCustom.REQUEST_BLUETOOTH);
         }
+    }
+
+    public void createNewBluetoothConnection(View view){
+        bluetoothDevicesCustom.closeConnection();
+        currentConnectedDevice.setText("");
+        arrayAdapter.clear();
+        arrayAdapter.notifyDataSetChanged();
+        bluetoothDevices.clear();
+        Set<BluetoothDevice> pairedDevices = bluetoothDevicesCustom.pairedDevices;
+        for(BluetoothDevice bt : pairedDevices){
+            bluetoothDevices.add(bt);
+            arrayAdapter.add(bt.getName() + "\n" + bt.getAddress());
+        }
+        selectDeviceAlertDialog();
     }
 }

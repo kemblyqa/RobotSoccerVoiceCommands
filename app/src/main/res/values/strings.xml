@@ -2,4 +2,5 @@
     <string name="app_name">AppRobotIA</string>
     <string name="turnOnBluetoothTitle">Turn on bluetooth</string>
     <string name="turnOffBluetoothTitle">Turn off bluetooth</string>
+    <string name="deviceButtonTitle">Conectar</string>
 </resources>

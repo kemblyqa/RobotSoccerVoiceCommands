@@ -133,6 +133,7 @@ public class MainActivity extends AppCompatActivity {
             if(bluetoothDevicesCustom.createConnection(device)){
                 Toast.makeText(bluetoothDevicesCustom, "Device successful connected", Toast.LENGTH_SHORT).show();
                 currentConnectedDevice.setText(device.getName());
+                //TODO: connected bluetooth device image
             } else {
                 Toast.makeText(bluetoothDevicesCustom, "There´s something wrong with connection", Toast.LENGTH_SHORT).show();
             }
@@ -157,7 +158,7 @@ public class MainActivity extends AppCompatActivity {
         arrayAdapter.clear();
         arrayAdapter.notifyDataSetChanged();
         bluetoothDevices.clear();
-        Set<BluetoothDevice> pairedDevices = bluetoothDevicesCustom.pairedDevices;
+        Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
         for(BluetoothDevice bt : pairedDevices){
             bluetoothDevices.add(bt);
             arrayAdapter.add(bt.getName() + "\n" + bt.getAddress());

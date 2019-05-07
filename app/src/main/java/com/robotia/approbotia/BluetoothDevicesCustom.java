@@ -108,7 +108,7 @@ public class BluetoothDevicesCustom extends Application {
         }
         try {
             bluetoothSocket.connect();
-            Toast.makeText(instance, "Conexión socket correcta", Toast.LENGTH_SHORT).show();
+            Toast.makeText(instance, "Socket connection successful", Toast.LENGTH_SHORT).show();
 
             mConnectedThread = new ConnectedThread(bluetoothSocket);
             mConnectedThread.start();
@@ -116,18 +116,14 @@ public class BluetoothDevicesCustom extends Application {
             return true;
         } catch (IOException e) {
             try {
-                Toast.makeText(instance, "No hay conexión", Toast.LENGTH_SHORT).show();
+                Toast.makeText(instance, "No connection", Toast.LENGTH_SHORT).show();
                 bluetoothSocket.close();
                 return false;
             } catch (IOException e2) {
-                Toast.makeText(instance, "Error durante el cierre de conexión!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(instance, "Closing error!", Toast.LENGTH_SHORT).show();
                 return false;
             }
         }
-    }
-
-    void setHandler(Handler handler) {
-        mHandler = handler;
     }
 
     //create new class for connect thread

@@ -88,7 +88,7 @@ public class MainActivity extends AppCompatActivity {
                     ArrayList<String> result = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
                     String resultText = result.get(0);
                     mVoiceInputTv.setText(resultText);
-                    //sendVoiceCommand(resultText);
+                    sendVoiceCommand(resultText);
                 }
                 break;
             }
@@ -129,13 +129,10 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void connectBtSocket(BluetoothDevice device){
-        if (device.getAddress().equals(BluetoothDevicesCustom.DEVICE_MAC_ADDRESS)){
+        if (device.getAddress().equals(BluetoothDevicesCustom.HEADPHONES_MAC_ADDRESS)){
             if(bluetoothDevicesCustom.createConnection(device)){
-                Toast.makeText(bluetoothDevicesCustom, "Device successful connected", Toast.LENGTH_SHORT).show();
                 currentConnectedDevice.setText(device.getName());
                 //TODO: connected bluetooth device image
-            } else {
-                Toast.makeText(bluetoothDevicesCustom, "There´s something wrong with connection", Toast.LENGTH_SHORT).show();
             }
         } else {
             Toast.makeText(bluetoothDevicesCustom, "Wrong device!", Toast.LENGTH_SHORT).show();

@@ -1,16 +1,27 @@
 package com.robotia.approbotia;
 
 import android.app.Application;
+import android.bluetooth.BluetoothA2dp;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothClass;
 import android.bluetooth.BluetoothDevice;
+import android.bluetooth.BluetoothHeadset;
+import android.bluetooth.BluetoothProfile;
 import android.bluetooth.BluetoothSocket;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.media.AudioManager;
 import android.os.Handler;
 import android.os.Message;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.math.BigInteger;
 import java.util.Set;
 import java.util.UUID;
@@ -26,13 +37,14 @@ public class BluetoothDevicesCustom extends Application {
     static final int REQUEST_BLUETOOTH = 1;
     static final String ARDUINO_MAC_ADDRESS = "00:00";
     static final String DEVICE_MAC_ADDRESS = "00:00";
+    static final String HEADPHONES_MAC_ADDRESS = "22:22:22:67:0E:00";
     final UUID ARDUINO_PORT_UUID = UUID.fromString("00001101-0000-1000-8000-00805F9B34FB");
 
     //need this
+    final UUID HEADSET_PORT_UUID = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
     final UUID DEVICE_PORT_UUID = UUID.fromString("0000111E-0000-1000-8000-00805F9B34FB");
 
     BluetoothAdapter bluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
-    public Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
     Handler mHandler;
     public BluetoothSocket bluetoothSocket = null;
     public ConnectedThread mConnectedThread;
@@ -41,16 +53,6 @@ public class BluetoothDevicesCustom extends Application {
     public void onCreate() {
         super.onCreate();
         instance = this;
-
-//        mHandler = new Handler(){
-//            @Override
-//            public void handleMessage(Message msg) {
-//                if(msg.what == handlerState){
-//                    String readMessage = (String) msg.obj;
-//                    Toast.makeText(BluetoothDevicesCustom.this, readMessage, Toast.LENGTH_SHORT).show();
-//                }
-//            }
-//        };
     }
 
     public boolean sendToDevice(String word){
@@ -102,13 +104,13 @@ public class BluetoothDevicesCustom extends Application {
 
     boolean createConnection(BluetoothDevice device) {
         try {
-            bluetoothSocket = device.createRfcommSocketToServiceRecord(DEVICE_PORT_UUID);
+            bluetoothSocket = device.createRfcommSocketToServiceRecord(HEADSET_PORT_UUID);
         } catch (IOException e) {
             return false;
         }
         try {
             bluetoothSocket.connect();
-            Toast.makeText(instance, "Socket connection successful", Toast.LENGTH_SHORT).show();
+            Toast.makeText(instance, "Connection successful", Toast.LENGTH_SHORT).show();
 
             mConnectedThread = new ConnectedThread(bluetoothSocket);
             mConnectedThread.start();
@@ -120,7 +122,7 @@ public class BluetoothDevicesCustom extends Application {
                 bluetoothSocket.close();
                 return false;
             } catch (IOException e2) {
-                Toast.makeText(instance, "Closing error!", Toast.LENGTH_SHORT).show();
+                Toast.makeText(instance, "Closing connection error!", Toast.LENGTH_SHORT).show();
                 return false;
             }
         }
@@ -155,8 +157,8 @@ public class BluetoothDevicesCustom extends Application {
                     bytes = mmInStream.read(buffer);         //read bytes from input buffer
                     String readMessage = new String(buffer, 0, bytes);
                     // Send the obtained bytes to the UI Activity via handler
-                    mHandler.obtainMessage(handlerState, bytes, -1, readMessage)
-                            .sendToTarget();
+//                    mHandler.obtainMessage(handlerState, bytes, -1, readMessage)
+//                            .sendToTarget();
                 } catch (IOException e) {
                     break;
                 }

@@ -3,38 +3,46 @@ package com.robotia.approbotia;
 import android.app.Activity;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothSocket;
 import android.content.ActivityNotFoundException;
-import android.content.BroadcastReceiver;
-import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.os.Handler;
+import android.os.Message;
+import android.os.ParcelUuid;
 import android.speech.RecognizerIntent;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Locale;
 import java.util.Set;
-import java.util.UUID;
 
 public class MainActivity extends AppCompatActivity {
-    private Button bluetoothSwitch, startTalking;
-    private TextView mVoiceInputTv, currentConnectedDevice;
-    private BluetoothDevicesCustom bluetoothDevicesCustom = BluetoothDevicesCustom.getInstance();
+    //UI elements
+    private TextView mVoiceInputTv, currentConnectedDevice, prueba;
+    Button bluetoothSwitch, startTalking;
+
+    //Handler
+    static Handler handler;
+    static final int HANDLER_STATE = 0;             //used to identify handler message
+
+    //Bluetooth
+    private BluetoothDevicesService bluetoothDevicesService = BluetoothDevicesService.getInstance();
     public ArrayAdapter<String> arrayAdapter;
     public ArrayList<BluetoothDevice> bluetoothDevices;
     private BluetoothAdapter bluetoothAdapter;
+
+    //speech
     private static final int REQ_CODE_SPEECH_INPUT = 100;
 
     @Override
@@ -46,8 +54,9 @@ public class MainActivity extends AppCompatActivity {
         startTalking = findViewById(R.id.startBtn);
         mVoiceInputTv = findViewById(R.id.inputCommand);
         currentConnectedDevice = findViewById(R.id.currentConnectedDevice);
+        prueba = findViewById(R.id.prueba);
 
-        bluetoothAdapter = bluetoothDevicesCustom.getBluetoothAdapter();
+        bluetoothAdapter = bluetoothDevicesService.getBluetoothAdapter();
         arrayAdapter = new ArrayAdapter<>(this, android.R.layout.simple_list_item_1);
         bluetoothDevices = new ArrayList<>();
         makeBluetoothConnection();
@@ -58,6 +67,17 @@ public class MainActivity extends AppCompatActivity {
                 startVoiceInput();
             }
         });
+
+        handler = new Handler(){
+            @Override
+            public void handleMessage(Message msg) {
+                if(msg.what == HANDLER_STATE){
+                    String readMessage = new String((byte[]) msg.obj) ;// msg.arg1 = bytes from connect thread
+                    prueba.setText(readMessage);
+                }
+                super.handleMessage(msg);
+            }
+        };
     }
 
     private void startVoiceInput() {
@@ -73,7 +93,7 @@ public class MainActivity extends AppCompatActivity {
     private void makeBluetoothConnection(){
         if (!bluetoothAdapter.isEnabled()) {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, BluetoothDevicesCustom.REQUEST_BLUETOOTH);
+            startActivityForResult(enableBtIntent, BluetoothDevicesService.REQUEST_BLUETOOTH);
         } else {
             bluetoothSwitch.setText(getString(R.string.turnOffBluetoothTitle));
             Toast.makeText(this, "Bluetooth connected....", Toast.LENGTH_SHORT).show();
@@ -92,7 +112,7 @@ public class MainActivity extends AppCompatActivity {
                 }
                 break;
             }
-            case BluetoothDevicesCustom.REQUEST_BLUETOOTH:{
+            case BluetoothDevicesService.REQUEST_BLUETOOTH:{
                 if(resultCode == Activity.RESULT_OK){
                     bluetoothSwitch.setText(getString(R.string.turnOffBluetoothTitle));
                     Toast.makeText(this, "Bluetooth connected....", Toast.LENGTH_SHORT).show();
@@ -110,8 +130,8 @@ public class MainActivity extends AppCompatActivity {
     public void sendVoiceCommand(String comm){
         String[] stringWords = comm.split(" ");
         for(String word : stringWords){
-            if(!bluetoothDevicesCustom.sendToDevice(word)){
-                Toast.makeText(bluetoothDevicesCustom, "Word "+word+" not sent", Toast.LENGTH_SHORT).show();
+            if(!bluetoothDevicesService.sendToDevice(word)){
+                Toast.makeText(bluetoothDevicesService, "Word "+word+" not sent", Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -129,13 +149,35 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void connectBtSocket(BluetoothDevice device){
-        if (device.getAddress().equals(BluetoothDevicesCustom.HEADPHONES_MAC_ADDRESS)){
-            if(bluetoothDevicesCustom.createConnection(device)){
+        if (device.getAddress().equals(BluetoothDevicesService.DEVICE_QUIROS_MAC_ADDRESS)){
+//            try {
+//                BluetoothAdapter adapter = BluetoothAdapter.getDefaultAdapter();
+//                Method getUuidsMethod = BluetoothAdapter.class.getDeclaredMethod("getUuids", null);
+//                ParcelUuid[] uuids = (ParcelUuid[]) getUuidsMethod.invoke(adapter, null);
+//
+//                if(uuids != null) {
+//                    for (ParcelUuid uuid : uuids) {
+//                        Log.d("my", "UUID: " + uuid.getUuid().toString());
+//                    }
+//                }else{
+//                    Log.d("my", "Uuids not found, be sure to enable Bluetooth!");
+//                }
+//
+//            } catch (NoSuchMethodException e) {
+//                e.printStackTrace();
+//            } catch (IllegalAccessException e) {
+//                e.printStackTrace();
+//            } catch (InvocationTargetException e) {
+//                e.printStackTrace();
+//            }
+
+            if(bluetoothDevicesService.createConnection(device, BluetoothDevicesService.DEVICE_PORT_UUID_3)){
                 currentConnectedDevice.setText(device.getName());
                 //TODO: connected bluetooth device image
+                //TODO: verify with boolean (always true)
             }
         } else {
-            Toast.makeText(bluetoothDevicesCustom, "Wrong device!", Toast.LENGTH_SHORT).show();
+            Toast.makeText(bluetoothDevicesService, "Wrong device!", Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -145,13 +187,13 @@ public class MainActivity extends AppCompatActivity {
             bluetoothSwitch.setText(getString(R.string.turnOnBluetoothTitle));
         } else {
             Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
-            startActivityForResult(enableBtIntent, BluetoothDevicesCustom.REQUEST_BLUETOOTH);
+            startActivityForResult(enableBtIntent, BluetoothDevicesService.REQUEST_BLUETOOTH);
         }
     }
 
     public void createNewBluetoothConnection(View view){
-        bluetoothDevicesCustom.closeConnection();
-        currentConnectedDevice.setText("");
+        bluetoothDevicesService.closeConnection();
+        currentConnectedDevice.setText("Some device");
         arrayAdapter.clear();
         arrayAdapter.notifyDataSetChanged();
         bluetoothDevices.clear();

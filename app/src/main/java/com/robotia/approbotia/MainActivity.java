@@ -9,13 +9,9 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import org.json.JSONObject;
-
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Locale;
-
 import io.socket.client.IO;
 import io.socket.client.Socket;
 import io.socket.emitter.Emitter;
@@ -26,9 +22,9 @@ public class MainActivity extends AppCompatActivity {
     Button startTalking;
     //speech
     private static final int REQ_CODE_SPEECH_INPUT = 100;
-    private static final String BASE_URI = "http://172.24.110.50:3000";
     //socket
     Socket socket;
+    private static final String BASE_URI = "http://172.24.29.56:3000";
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
